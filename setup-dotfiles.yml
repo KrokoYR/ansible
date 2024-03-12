@@ -22,6 +22,7 @@
       args:
         creates: ~/.oh-my-zsh
       become: no
+      when: not dotfiles_dir.stat.exists
 
     - name: Install Powerlevel10k theme
       git:
@@ -32,6 +33,7 @@
       environment:
         ZSH_CUSTOM: ~/.oh-my-zsh/custom
       become: no
+      when: not dotfiles_dir.stat.exists
 
     - name: Install zsh-autosuggestions plugin
       git:
@@ -42,6 +44,7 @@
       environment:
         ZSH_CUSTOM: ~/.oh-my-zsh/custom
       become: no
+      when: not dotfiles_dir.stat.exists
 
     - name: Replace .zshrc with the custom version
       file:
@@ -50,6 +53,7 @@
         state: link
         force: yes
       become: no
+      when: not dotfiles_dir.stat.exists
 
     - name: Ensure Neovim config directory exists
       file:
@@ -64,3 +68,18 @@
         state: link
         force: yes
       when: not dotfiles_dir.stat.exists
+
+    - name: Find files in the source directory
+      find:
+        paths: "~/dotfiles/bin/.local/scripts/"
+        depth: 1
+      register: files_to_link
+
+    - name: Create symbolic links for each found script file
+      file:
+        src: "{{ item.path }}"
+        dest: "/usr/local/bin/{{ item.path | basename }}"
+        state: link
+        force: yes
+      loop: "{{files_to_link.files}}"
+      become: true
